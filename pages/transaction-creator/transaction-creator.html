@@ -1,0 +1,219 @@
+<h1>Transaction Creator</h1>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a ng-click="vm.showExplanation = !vm.showExplanation">Explicación</a>
+    </h4>
+  </div>
+  <div class="panel-collapse collapse" ng-class="{in: vm.showExplanation}">
+    <div class="panel-body">
+      En esta página puedes crear una transacción para cualquier red/blockchain que esté configurada.
+      <br><br>La idea es que usted puede utilizar esta herramienta para crear cualquier transacción válida fuera de línea y luego sólo enviarla a un monedero online. De esta manera su clave privada puede permanecer fuera de línea (sólo si se descarga esta herramienta y se utiliza fuera de línea, por supuesto).
+
+      <h3>Más info:</h3>
+      <ul>
+        <li><a href="https://bitcoinjs.org/">BitcoinJS</a></li>
+        <li><a href="https://github.com/bitcoinjs/bitcoinjs-lib">BitcoinJS GitHub</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-warning">
+  <strong>Advertencia</strong>: No use las claves generadas por este simulador en un monedero real, ya que existe el riesgo de que estas puedan romperse, debido a la baja entropía.
+</div>
+
+<h4>Indique la red red destino y la clave privada</h4>
+<div class="well">
+  <form class="form-horizontal">
+
+    <!-- target network -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Red destino:</label>
+      <div class="col-sm-9 input-group">
+        <select ng-model="vm.network"
+                ng-options="network.label for network in vm.networks"
+                class="form-control">
+        </select>
+      </div>
+    </div>
+
+    <!-- private key -->
+    <div class="form-group">
+      <label for="wifUncompressed" class="col-sm-3 control-label">Pegue su clave privada:</label>
+      <div class="col-sm-9 input-group">
+        <input id="wifUncompressed"
+               ng-model="vm.keyPair.wif"
+               ng-change="vm.importFromWif()"
+               ng-class="{'well-error': vm.error}"
+               class="form-control"><br/>
+        <span class="input-group-addon" ng-if="!vm.error">&lt;-- pegue su clave privada comprimida/descompimida</span>
+        <span class="input-group-addon well-error" ng-if="vm.error"> {{vm.error}}</span>
+      </div>
+    </div>
+
+    <!-- Source address -->
+    <div class="form-group" ng-if="vm.keyValid">
+      <label class="col-sm-3 control-label">Dirección de origen:</label>
+      <div class="col-sm-9 input-group">
+        <div class="input-group">
+          <div class="input-group-addon">P2PKH</div>
+          <input class="form-control" ng-readonly="true" value="{{vm.keyPair.address}}">
+        </div>
+      </div>
+    </div>
+
+    <!-- SegWit source address -->
+    <div class="form-group" ng-if="vm.keyValid && vm.network.config.bech32">
+      <label class="col-sm-3 control-label">Direcicón SegWit de origen:</label>
+      <div class="col-sm-9 input-group">
+        <div class="input-group">
+          <div class="input-group-addon">P2SH-P2WPKH</div>
+          <input class="form-control" ng-readonly="true" value="{{vm.keyPair.nestedP2WPKHAddress}}">
+          <div class="input-group-addon">bech32 P2WPKH</div>
+          <input class="form-control" ng-readonly="true" value="{{vm.keyPair.P2WPKHAddress}}">
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div ng-if="vm.keyValid">
+  <h4>Entrada</h4>
+  <div class="well">
+    <form class="form-horizontal">
+
+      <!-- input -->
+      <div class="form-group">
+        <label class="col-sm-3 control-label">Transacción de Entrada (UTXO):</label>
+        <div class="col-sm-9">
+          <div class="input-group">
+            <div class="input-group-addon">Transaction ID (txId)</div>
+            <input class="form-control"
+                   ng-model="vm.inputTxId"
+                   ng-change="vm.createTransaction()"
+                   type="text">
+          </div>
+          <div class="input-group">
+            <div class="input-group-addon">Indice (vout)</div>
+            <input class="form-control"
+                   ng-model="vm.inputTxVout"
+                   ng-change="vm.createTransaction()"
+                   type="number">
+          </div>
+          <div class="input-group">
+            <div class="input-group-addon">Entrada transacción SegWit:</div>
+            <div class="input-group-addon">
+              <input type="checkbox" ng-model="vm.inputSegwit">
+            </div>
+            <input class="form-control no-border"
+                   ng-readonly="true"
+                   type="text">
+          </div>
+          <div class="input-group">
+            <div class="input-group-addon">Cantidad prevista no gastada en Satoshi (utilizada para el cálculo de la tasa)</div>
+            <input class="form-control"
+                   ng-model="vm.inputAmount"
+                   ng-change="vm.calculateFee()"
+                   type="number">
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <h4>Salidas</h4>
+  <div class="well">
+    <form class="form-horizontal">
+
+      <!-- target address -->
+      <div class="form-group">
+        <label class="col-sm-3 control-label">Dirección destino:</label>
+        <div class="col-sm-9">
+          <div class="input-group">
+            <div class="input-group-addon">Cualquier dirección</div>
+            <input class="form-control"
+                   ng-model="vm.outputAddress"
+                   ng-change="vm.createTransaction()"
+                   type="text">
+            <div class="input-group-addon">Monto (satoshi!)</div>
+            <input class="form-control"
+                   ng-model="vm.outputAmount"
+                   ng-change="vm.calculateFee()"
+                   type="number">
+          </div>
+        </div>
+      </div>
+
+      <!-- change address -->
+      <div class="form-group">
+        <label class="col-sm-3 control-label">Dirección de cambio:</label>
+        <div class="col-sm-9">
+          <div class="input-group">
+            <div class="input-group-addon">Enviar cambia a la dirección:</div>
+            <div class="input-group-addon">
+              <input type="checkbox" ng-model="vm.useChange">
+            </div>
+            <input class="form-control no-border"
+                   ng-readonly="true"
+                   type="text">
+          </div>
+          <div class="input-group" ng-if="vm.useChange" >
+            <div class="input-group-addon">Dirección de cambio:</div>
+            <input class="form-control"
+                   ng-model="vm.changeAddress"
+                   ng-change="vm.createTransaction()"
+                   type="text">
+            <div class="input-group-addon">Monto (satoshi!)</div>
+            <input class="form-control"
+                   ng-model="vm.changeAmount"
+                   ng-change="vm.calculateFee()"
+                   type="number">
+          </div>
+          <div class="input-group">
+            <div class="input-group">
+              <div class="input-group-addon" ng-if="!vm.feeError">Comisión calculada (satoshi)</div>
+              <input class="form-control"
+                     ng-class="{'well-error': vm.feeError}"
+                     ng-readonly="true"
+                     value="{{vm.feeError || vm.calculatedFee}}">
+              <div class="input-group-addon" ng-if="!vm.feeError">Comisión calculada (satoshi/byte)</div>
+              <input class="form-control"
+                     ng-class="{'well-error': vm.feeError}"
+                     ng-readonly="true"
+                     value="{{vm.feeError || vm.calculatedFee / (vm.raw.length * 4)}}">
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <h4>Salidas</h4>
+  <div class="well">
+    <form class="form-horizontal">
+
+      <!-- transaction raw hex value -->
+      <div class="form-group">
+        <label class="col-sm-3 control-label" for="raw">Valor raw de la transacción:</label>
+        <div class="col-sm-9 input-group">
+          <textarea id="raw"
+                    rows="10"
+                    ng-readonly="true"
+                    class="form-control"
+                    ng-class="{'well-error': vm.txError}"
+          >{{vm.txError || vm.raw}}</textarea>
+        </div>
+      </div>
+
+      <!-- transaction hex -->
+      <div class="form-group">
+        <label class="col-sm-3 control-label">TX ID:</label>
+        <div class="col-sm-9 no-left-padding">
+          <input class="form-control" ng-readonly="true" value="{{vm.txId}}">
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

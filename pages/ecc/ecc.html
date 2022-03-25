@@ -1,0 +1,232 @@
+<h1>Criptografía de Curva Eliptica (ECC) / ECDSA</h1>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a ng-click="vm.showExplanation = !vm.showExplanation">Explicación</a>
+    </h4>
+  </div>
+  <div class="panel-collapse collapse" ng-class="{in: vm.showExplanation}">
+    <div class="panel-body">
+      El algoritmo ECDSA funciona mediante un mecanismo de criptografía llamado, criptografía asimétrica.
+      Este sistema de firmado, genera dos claves que reciben el nombre de clave privada y clave pública.
+      Ambas claves están relacionadas por una compleja operación matemática realizada sobre una función de curva elíptica.
+
+      <br><br>Bajo este esquema de funcionamiento, ECDSA garantiza en primera instancia lo siguiente:
+      
+      <ul>
+        <li>Firmas únicas e irrepetibles para cada conjunto de generación de claves privadas y públicas.</li>
+        <li>La imposibilidad práctica de falsificar las firmas digitales. Esto es así porque la potencia computacional necesaria para ello, está fuera de los límites actuales.</li>
+        <li>Gracias a estas dos características, ECDSA se considera un estándar seguro para desplegar sistemas de firmas digitales. </li>
+      </ul>
+
+      <h3>Más info:</h3>
+      <ul>
+        <li><a href="https://academy.bit2me.com/que-es-ecdsa-curva-eliptica/"> Bit2Me Academy - ¿Qué es el algoritmo de firma ECDSA?</a></li>
+        <li><a href="https://bitcoinjs.org/">BitcoinJS</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-warning">
+  <strong>Advertencia</strong>: No use las claves generadas por este simulador en un monedero real, ya que existe el riesgo de que estas puedan romperse, debido a la baja entropía.
+</div>
+
+<h4>Par de claves de Curva Elíptica (ECC)</h4>
+<div class="well">
+  <form class="form-horizontal">
+    <div class="form-group">
+      <label class="col-sm-4 control-label">Clave privada (decimal):</label>
+      <div class="col-sm-8 input-group">
+        <input class="form-control" ng-readonly="true" value="{{vm.privKeyDecimal.toString('10')}}">
+        <span class="input-group-btn">
+          <button class="btn btn-primary" ng-click="vm.newPrivateKey()">Generar nueva</button>
+        </span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-sm-4 control-label">Clave privada (hex):</label>
+      <div class="col-sm-8 input-group">
+        <input class="form-control" ng-readonly="true" value="{{vm.keyPair.privateKey.toString('hex')}}">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-sm-4 control-label">Clave pública (decimal):</label>
+      <div class="col-sm-8 input-group">
+        <input class="form-control" ng-readonly="true" value="{{vm.pubKeyDecimal}}">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-sm-4 control-label">Clave pública (hex):</label>
+      <div class="col-sm-8 input-group">
+        <input class="form-control" ng-readonly="true" value="{{vm.pubKey.toString('hex')}}">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-sm-4 control-label">Formato de clave para la red:</label>
+      <div class="col-sm-8 input-group">
+        <select ng-model="vm.network"
+                ng-change="vm.formatKeyForNetwork()"
+                ng-options="network.label for network in vm.networks"
+                class="form-control">
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-sm-4 control-label">
+        <a ng-click="vm.showWifCompressed = !vm.showWifCompressed">Clave privada (formato WIF, comprimida):</a>
+      </label>
+      <div class="col-sm-8 input-group">
+        <input class="form-control" ng-readonly="true" value="{{vm.keyPair.wif}}">
+      </div>
+      <div ng-show="vm.showWifCompressed" class="col-sm-offset-4 col-sm-8 qr-code" id="qrPrivCompressed"></div>
+    </div>
+
+    <div class="form-group">
+      <label for="wifUncompressed" class="col-sm-4 control-label">
+        <a ng-click="vm.showWifUncompressed = !vm.showWifUncompressed">Clave privada (formato WIF, descomprimida):</a>
+      </label>
+      <div class="col-sm-8 input-group">
+        <input id="wifUncompressed"
+               ng-model="vm.keyPairUncompressed.wif"
+               ng-change="vm.importFromWif()"
+               ng-class="{'well-error': vm.error}"
+               class="form-control"><br/>
+        <span class="input-group-addon" ng-if="!vm.error">&lt;-- pegue aquí la clave en formato WIF</span>
+        <span class="input-group-addon well-error" ng-if="vm.error"> {{vm.error}}</span>
+      </div>
+      <div ng-show="vm.showWifUncompressed" class="col-sm-offset-4 col-sm-8 qr-code" id="qrPrivUncompressed"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-sm-4 control-label">
+        <a ng-click="vm.showPubkey = !vm.showPubkey">Dirección (P2PKH) :</a>
+      </label>
+      <div class="col-sm-8 input-group">
+        <input class="form-control" ng-readonly="true" value="{{vm.keyPair.address}}">
+      </div>
+      <div ng-show="vm.showPubkey" class="col-sm-offset-4 col-sm-8 qr-code" id="qrPubkey"></div>
+    </div>
+
+    <div class="form-group" ng-if="vm.network.config.bech32">
+      <label class="col-sm-4 control-label">Dirección SegWit v0 P2SH-P2WPKH:</label>
+      <div class="col-sm-8 input-group">
+        <input class="form-control" ng-readonly="true" value="{{vm.keyPair.nestedP2WPKHAddress}}">
+      </div>
+    </div>
+
+    <div class="form-group" ng-if="vm.network.config.bech32">
+      <label class="col-sm-4 control-label">Dirección SegWit v0 bech32 P2WPKH:</label>
+      <div class="col-sm-8 input-group">
+        <input class="form-control" ng-readonly="true" value="{{vm.keyPair.P2WPKHAddress}}">
+      </div>
+    </div>
+
+    <div class="form-group" ng-if="vm.network.config.bech32">
+      <label class="col-sm-4 control-label">Dirección SegWit v1 bech32m P2TR:</label>
+      <div class="col-sm-8 input-group">
+        <input class="form-control" ng-readonly="true" value="{{vm.keyPair.P2TRAddress}}">
+      </div>
+    </div>
+  </form>
+</div>
+
+<h4>Algoritmo de Firma Digital de Curva Elíptica (ECDSA): Firmas mensaje</h4>
+<div class="well">
+  <form class="form-horizontal">
+    <div class="form-group">
+      <label for="message" class="col-sm-4 control-label">Mensaje a firmar:</label>
+      <div class="col-sm-8 input-group">
+        <input id="message" ng-model="vm.message" ng-change="vm.signMessage()" class="form-control">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-sm-4 control-label">Hash SHA-256 del mensaje:</label>
+      <div class="col-sm-8 no-left-padding">
+        <input class="form-control" ng-readonly="true" value="{{vm.messageHash.toString('hex')}}">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-sm-4 control-label">Firma:</label>
+      <div class="col-sm-8 no-left-padding">
+        <input class="form-control" ng-readonly="true" value="{{vm.signature}}">
+      </div>
+    </div>
+  </form>
+</div>
+
+<h4>Algoritmo de Firma Digital de Curva Elíptica (ECDSA): Verificar firma</h4>
+<div class="well" ng-class="{'well-success': vm.signatureValid, 'well-error': !vm.signatureValid}">
+  <form class="form-horizontal">
+    <div class="form-group">
+      <label for="messageHash" class="col-sm-4 control-label">Hash del mensaje:</label>
+      <div class="col-sm-8 input-group">
+        <input id="messageHash"
+               ng-model="vm.messageHashToVerify"
+               ng-change="vm.verifySignature()"
+               class="form-control">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="signature" class="col-sm-4 control-label">Firma:</label>
+      <div class="col-sm-8 no-left-padding">
+        <input id="signature"
+               ng-model="vm.signatureToVerify"
+               ng-change="vm.verifySignature()"
+               class="form-control">
+      </div>
+    </div>
+  </form>
+</div>
+
+<h4>Multiplo ECC</h4>
+<div class="well">
+  <form class="form-horizontal">
+    <div class="form-group">
+      <label for="multiplicand" class="col-sm-4 control-label">Multiplicando:</label>
+      <div class="col-sm-8 input-group">
+        <input id="multiplicand"
+               ng-model="vm.eccMultiplicand"
+               ng-change="vm.eccMultiply()"
+               class="form-control">
+      </div>
+      <div class="col-sm-offset-4 input-group">
+        <div class="input-group-addon">Multiplicando de la clave privada:</div>
+        <div class="input-group-addon">
+          <input type="checkbox"
+                 ng-model="vm.multiplicandPrivKey"
+                 ng-change="vm.eccMultiply()">
+        </div>
+        <input class="form-control no-border"
+               ng-readonly="true"
+               type="text">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="multiplier" class="col-sm-4 control-label">Multiplicador:</label>
+      <div class="col-sm-8 no-left-padding">
+        <input id="multiplier"
+               ng-model="vm.eccMultiplier"
+               ng-change="vm.eccMultiply()"
+               class="form-control">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="col-sm-4 control-label">Resultado:</label>
+      <div class="col-sm-8 no-left-padding">
+        <input class="form-control" ng-readonly="true" value="{{vm.eccResult}}">
+      </div>
+    </div>
+  </form>
+</div>

@@ -1,0 +1,221 @@
+<h1>Bitcoin Block Parser</h1>
+
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <h4 class="panel-title">
+            <a ng-click="vm.showExplanation = !vm.showExplanation">Explicación</a>
+        </h4>
+    </div>
+    <div class="panel-collapse collapse" ng-class="{in: vm.showExplanation}">
+        <div class="panel-body">
+            Examina la información de los bloques y transacciones de la red Bitcoin.
+
+            <h3>Más info:</h3>
+            <ul>
+                <li><a href="https://blockexplorer.com/api-ref">Blockchain Explorer API reference</a></li>
+                <li><a href="https://bitcoinjs.org/">BitcoinJS</a></li>
+                <li><a href="https://github.com/bitcoinjs/bitcoinjs-lib">BitcoinJS GitHub repo</a></li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<h4>Block data</h4>
+<div class="well">
+    <form class="form-horizontal">
+        <div class="form-group">
+            <label class="col-sm-4 control-label">API URL:</label>
+            <div class="col-sm-8 input-group">
+                <select ng-model="vm.selectedBlockSource"
+                        ng-change="vm.downloadBlock()"
+                        ng-options="source.label for source in vm.sources"
+                        class="form-control">
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-4 control-label" for="hash">Hash del bloque a examinar:</label>
+            <div class="col-sm-8 input-group">
+                <input id="hash"
+                       class="form-control"
+                       ng-model="vm.hash"
+                       ng-change="vm.downloadBlock()"
+                       ng-class="{'well-error': vm.error}">
+                <span class="input-group-addon" ng-if="!vm.error">&lt;-- pegar aquí para examinar</span>
+                <span class="input-group-addon well-error" ng-if="vm.error"> {{vm.error}}</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="col-sm-8 col-sm-offset-4">
+                Cargar ejemplos (espere un momento a la carga):
+                <ul>
+                    <li>
+                        <a ng-click="vm.hash = '000000000000000003d79e6973863cdb24ac6f3ddd526f61a8ff4fb684db1e9f'; vm.downloadBlock();">
+                            Block #371667, 51 transacciones
+                        </a>
+                    </li>
+                    <li>
+                        <a ng-click="vm.hash = '000000000000000006a62f827dd0a2caba98c178bebb175ec1fcd250e1a0159c'; vm.downloadBlock();">
+                            Block #371610, 168 transacciones
+                        </a>
+                    </li>
+                    <li>
+                        <a ng-click="vm.hash = '0000000000000000009a2160814712117b1f07db54887dbbb5de02173d398db3'; vm.downloadBlock();">
+                            Block #496321, 300 transacciones, SegWit
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-sm-4 control-label" for="raw">Valor Raw hex:</label>
+            <div class="col-sm-8 input-group">
+        <textarea id="raw"
+                  rows="10"
+                  ng-model="vm.raw"
+                  ng-trim="false"
+                  ng-change="vm.parseBlock()"
+                  class="form-control"
+                  ng-class="{'well-error': vm.error}">
+          </textarea>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-sm-4 control-label" for="json">
+                <a ng-click="vm.showDecoded = !vm.showDecoded">Decodificar como JSON:</a>
+            </label>
+            <div class="col-sm-8 input-group" ng-if="vm.showDecoded">
+                <textarea id="json" rows="20" ng-readonly="true" class="form-control">{{vm.decodedBlock | json}}</textarea>
+            </div>
+            <div class="col-sm-8 input-group" ng-if="!vm.showDecoded">
+                <textarea id="json" rows="1" ng-readonly="true"
+                          class="form-control">(oculto por razones de rendimiento, clic para mostrar)</textarea>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="col-sm-4 control-label" for="json">Tamaño del bloque en nodos pre-SegWit:</label>
+            <div class="col-sm-8 input-group">
+                <input ng-readonly="true" value="{{vm.block.legacySize}}" class="form-control">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-4 control-label" for="json">Tamaño del bloque con SegWit:</label>
+            <div class="col-sm-8 input-group">
+                <input ng-readonly="true" value="{{vm.block.byteLength()}}" class="form-control">
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="col-sm-4 control-label" for="json">Peso del Block:</label>
+            <div class="col-sm-8 input-group">
+                <input ng-readonly="true" value="{{vm.block.weight}}" class="form-control">
+            </div>
+        </div>
+    </form>
+</div>
+
+<div ng-show="!vm.error && vm.decodedBlock && vm.decodedBlock.transactions.length > 0">
+    <h4>Merkle Tree</h4>
+    <div id="merkleTree" class="row row-horizon" ng-show="vm.decodedBlock.transactions.length <= 200"></div>
+    <div class="tooltip" id="tooltip"></div>
+    <span ng-if="vm.decodedBlock.transactions.length > 300">
+    Solo se muestran 300 transacciones por razones de rendimiento
+  </span>
+</div>
+
+<div ng-if="!vm.error && vm.decodedBlock && vm.decodedBlock.transactions.length > 0">
+    <div ng-repeat="tx in vm.decodedBlock.transactions">
+        <h4 ng-init="origTx = vm.block.transactions[$index]">TX {{$index}}</h4>
+        <div class="well">
+            <form class="form-horizontal">
+                <!-- hash -->
+                <div class="form-group">
+                    <label class="col-sm-3 control-label" for="raw">Hash calculado:</label>
+                    <div class="col-sm-9 input-group">
+                        <input ng-readonly="true" value="{{::origTx.getHash().toString('hex')}}" class="form-control">
+                    </div>
+                </div>
+
+                <!-- ID -->
+                <div class="form-group">
+                    <label class="col-sm-3 control-label" for="raw">TX ID:</label>
+                    <div class="col-sm-9 input-group">
+                        <input ng-readonly="true" value="{{::origTx.getId().toString('hex')}}" class="form-control">
+                    </div>
+                </div>
+
+                <!-- misc -->
+                <div class="form-group">
+                    <label class="col-sm-3 control-label" for="raw">Misc:</label>
+                    <div class="col-sm-9 input-group">
+            <span class="form-control" ng-readonly="true">
+                Version: {{::tx.version}}, Locktime: {{::tx.locktime}}, coinbase TX: {{::origTx.isCoinbase()}}, peso: {{::origTx.weight()}}
+            </span>
+                    </div>
+                </div>
+
+                <!-- inputs -->
+                <div class="form-group">
+                    <label class="col-sm-3 control-label" for="raw">Entradas:</label>
+                    <div class="col-sm-9 input-group">
+                        <div class="well" ng-repeat="input in ::tx.ins">
+                            <div class="form-group">
+                                <div class="input-group">
+                                    <span class="input-group-addon">TX ID de Referencia:</span>
+                                    <input ng-readonly="true" value="{{::vm.getTxId(input.hash)}}" class="form-control">
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-group-addon">Indice de salidas TX de referencias:</span>
+                                    <input ng-readonly="true" value="{{::input.index}}" class="form-control">
+                                    <span class="input-group-addon">Secuencia de números:</span>
+                                    <input ng-readonly="true" value="{{::input.sequence.toString(16)}}" class="form-control">
+                                </div>
+                                <div class="input-group" ng-if="!origTx.isCoinbase()">
+                                    <span class="input-group-addon">Bitcoin Script:</span>
+                                    <input ng-readonly="true" value="{{::input.script}}" class="form-control">
+                                </div>
+                                <div class="input-group" ng-if="origTx.isCoinbase()">
+                                    <span class="input-group-addon">Datos:</span>
+                                    <input ng-readonly="true" value="{{::vm.getRawString(input.script)}}" class="form-control">
+                                </div>
+                                <div class="input-group" ng-if="origTx.hasWitnesses()">
+                                    <span class="input-group-addon">Witness:</span>
+                                    <input ng-readonly="true" value="{{::input.witness}}" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- outputs -->
+                <div class="form-group">
+                    <label class="col-sm-3 control-label" for="raw">Salidas:</label>
+                    <div class="col-sm-9 input-group">
+                        <div class="well" ng-repeat="output in ::tx.outs">
+                            <div class="form-group">
+                                <div class="input-group">
+                                    <span class="input-group-addon">Valor (Raw/Satoshis):</span>
+                                    <input ng-readonly="true" value="{{::output.value}}" class="form-control">
+                                    <span class="input-group-addon">Valor (BTCs):</span>
+                                    <input ng-readonly="true" value="{{::output.value / 100000000}}" class="form-control">
+                                </div>
+                                <div class="input-group">
+                                    <span class="input-group-addon">Bitcoin Script:</span>
+                                    <input ng-readonly="true" value="{{::output.script}}" class="form-control">
+                                </div>
+                                <div class="input-group" ng-if="::vm.isP2PKH(origTx.outs[$index].script)">
+                                    <span class="input-group-addon">Dirección:</span>
+                                    <input ng-readonly="true"
+                                           value="{{::$root.hexPubKeyToBitcoinAddr(vm.getP2PKH(origTx.outs[$index].script))}}"
+                                           class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

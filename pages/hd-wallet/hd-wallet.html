@@ -1,0 +1,342 @@
+<h1>Monederos HD (BIP32/38/39/44/49/84)</h1>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a ng-click="vm.showExplanation = !vm.showExplanation">Explicación</a>
+    </h4>
+  </div>
+  <div class="panel-collapse collapse" ng-class="{in: vm.showExplanation}">
+    <div class="panel-body">
+      Las Hierarchical Deterministic Wallets o como se conocen comúnmente HD Wallets, son monederos de criptomonedas que emplean una única semilla de 12, 18 o 24 palabras claves, con la que pueden generar un número ilimitado de direcciones. 
+      <br><br>Esto se realiza de forma automática, jerárquica y secuencial. No obstante, recordar la semilla es un tanto complicado ya que se trata de una cadena de caracteres alfanuméricos ilegibles, por ello, se usan los códigos mnemotécnicos. Que convierten esta semilla en palabras entendibles para nosotros, por lo que realizar una copia de seguridad es mucho más fácil y práctico.
+      <br><br>Así, la implementación de este tipo de wallets resuelve la problemática presentada al inicio de tener que realizar tantas copias de seguridad y generar direcciones manualmente. Ahora con las HD Wallets solo es necesario que se haga un respaldo de la semilla, que está basada en un Protocolo de Mejora de Bitcoin (BIP), conocido como el BIP 32.
+      Matemáticamente, el BIP 32 le permite a la wallet generar, a partir de la semilla, una estructura jerárquica de claves privadas en forma de árbol. Así, cuando un dispositivo se pierda o dañe, es posible restaurar la wallet con todas las claves privadas del árbol, y por supuesto con todos los fondos, con la copia de seguridad de la semilla. Y esta es la maravilla de implementar esta tecnología.
+
+      <h3>Más información:</h3>
+      <ul>
+        <li><a href="https://academy.bit2me.com/que-son-las-hd-wallets/">Bit2Me Academy - ¿Qué son los monederos HD?</a></li>
+        <li><a href="https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki">Bitcoin - BIP - 0032</a></li>
+        <li><a href="https://github.com/bitcoin/bips/blob/master/bip-0038.mediawiki">Bitcoin - BIP - 0038</a></li>
+        <li><a href="https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki">Bitcoin - BIP - 0039</a></li>
+        <li><a href="https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki">Bitcoin - BIP - 0044</a></li>
+        <li><a href="https://github.com/bitcoin/bips/blob/master/bip-0049.mediawiki">Bitcoin - BIP - 0049</a></li>
+        <li><a href="https://github.com/bitcoin/bips/blob/master/bip-0084.mediawiki">Bitcoin - BIP - 0084</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-warning">
+  <strong>Advertencia</strong>: No use las claves generadas por este simulador en un monedero real, ya que existe el riesgo de que estas puedan romperse, debido a la baja entropía.
+</div>
+
+<h4>BIP39 mnemonica para BIP32 root key</h4>
+<div class="well">
+  <form class="form-horizontal">
+
+    <!-- mnemonic parameter -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Extensión de Seed:</label>
+      <div class="col-sm-9 input-group">
+        <select class="form-control"
+                ng-model="vm.mnemonicLength"
+                ng-options="l.label for l in vm.seedLengths"
+                ng-change="vm.newSeed()">
+        </select>
+        <span class="input-group-btn">
+          <button class="btn btn-primary" ng-click="vm.newSeed()">Generar nueva</button>
+        </span>
+      </div>
+    </div>
+
+    <!-- mnemonic -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Seed Mnemonica (BIP39):</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control"
+               ng-model="vm.mnemonic"
+               ng-change="vm.fromMnemonic()">
+      </div>
+    </div>
+
+    <!-- passphrase -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Clave:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control"
+               ng-model="vm.passphrase"
+               ng-change="vm.fromMnemonic()"
+               type="{{vm.asPassword ? 'password' : 'text'}}">
+        <span class="input-group-btn">
+            <button class="btn btn-primary" ng-click="vm.asPassword = !vm.asPassword">
+                {{vm.asPassword ? ' Mostrar' : 'Ocultar'}} clave
+            </button>
+        </span>
+        <div class="input-group-addon">Método</div>
+        <select ng-model="vm.strenghtening"
+                ng-change="vm.fromMnemonic()"
+                ng-options="s.label for s in vm.strenghteningMethods"
+                class="form-control">
+        </select>
+      </div>
+    </div>
+
+    <!-- seed hex -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Seed hex:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control"
+               ng-model="vm.seedHex"
+               ng-change="vm.fromHexSeed()">
+      </div>
+    </div>
+
+    <!-- root key base58 -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">HD node root key (base58):</label>
+      <div class="col-sm-9 input-group as-block">
+        <input class="form-control"
+               style="width: 60%"
+               ng-model="vm.nodeBase58"
+               ng-class="{'well-error': vm.error}"
+               ng-change="vm.fromBase58Seed()">
+        <span class="input-group-addon" ng-if="!vm.error" style="width: 20%">&lt;-- pegue aquí para importar.</span>
+        <span class="input-group-addon well-error" ng-if="vm.error" style="width: 20%"> {{vm.error}}</span>
+        <select ng-model="vm.network"
+                style="width: 20%"
+                ng-options="network.label for network in vm.networks"
+                ng-change="vm.fromMnemonic()"
+                class="form-control">
+        </select>
+      </div>
+    </div>
+
+    <!-- priv key WIF -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Clave privada (formato WIF, comprimida):</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control"
+               value="{{vm.node.toWIF()}}"
+               ng-readonly="true">
+      </div>
+    </div>
+
+    <!-- extended pubkey -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Clave pública extendida (base58):</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control"
+               value="{{vm.publicKeyWif}}"
+               ng-readonly="true">
+      </div>
+    </div>
+
+
+    <!-- address -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Dirección P2PKH:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control"
+               value="{{vm.address}}"
+               ng-readonly="true">
+      </div>
+    </div>
+  </form>
+</div>
+
+<h4>Derivación BIP32/44/49/84/341</h4>
+<div class="well">
+  <form class="form-horizontal">
+
+    <!-- BIP selection -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">BIP:</label>
+      <div class="col-sm-9 input-group">
+        <select ng-model="vm.selectedBip"
+                ng-options="bip.label for bip in vm.bips"
+                ng-change="vm.fromNode()"
+                class="form-control">
+        </select>
+      </div>
+    </div>
+
+    <!-- derive -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">BIP{{vm.selectedBip.bip}} parametros para derivación:</label>
+      <div class="col-sm-9 input-group">
+        <div class="input-group-addon" ng-if="vm.selectedBip.hasCoinType">Tipo de moneda</div>
+        <select ng-if="vm.selectedBip.hasCoinType"
+                ng-model="vm.coinType"
+                ng-options="coin.label for coin in vm.coinTypes"
+                ng-change="vm.fromNode()"
+                class="form-control">
+        </select>
+        <div class="input-group-addon">Cuenta</div>
+        <input class="form-control"
+               ng-model="vm.account"
+               ng-change="vm.calculatePath()"
+               min="0"
+               max="2147483647"
+               type="number">
+        <div class="input-group-addon">Cambio</div>
+        <input class="form-control"
+               ng-model="vm.change"
+               ng-change="vm.calculatePath()"
+               min="0"
+               max="2147483647"
+               type="number">
+        <div class="input-group-addon">Indice</div>
+        <input class="form-control"
+               ng-model="vm.index"
+               ng-change="vm.calculatePath()"
+               min="0"
+               max="2147483647"
+               type="number">
+      </div>
+      <div class="col-sm-offset-3 col-sm-9 input-group">
+        <div class="input-group-addon">Path</div>
+        <input class="form-control"
+               ng-model="vm.path"
+               ng-change="vm.fromPath()">
+      </div>
+    </div>
+
+    <!-- derived key base58 -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Clave derivada base58:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control"
+               value="{{vm.derivedKey.toBase58()}}"
+               ng-readonly="true">
+      </div>
+    </div>
+
+    <!-- priv key WIF -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Clave privada (formato WIF, comprimida):</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control"
+               value="{{vm.derivedKey.toWIF()}}"
+               ng-readonly="true">
+      </div>
+    </div>
+
+    <!-- p2pkh address -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Dirección P2PKH:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control"
+               value="{{vm.derivedKey.address}}"
+               ng-readonly="true">
+      </div>
+    </div>
+
+    <!-- SegWit v0 p2wpkh -->
+    <div class="form-group" ng-if="vm.network.config.bech32">
+      <label class="col-sm-3 control-label">Dirección SegWit v0 P2SH-P2WPKH:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control" ng-readonly="true" value="{{vm.derivedKey.nestedP2WPKHAddress}}">
+      </div>
+    </div>
+
+    <!-- SegWit v0 native p2wpkh -->
+    <div class="form-group" ng-if="vm.network.config.bech32">
+      <label class="col-sm-3 control-label">Dirección nativa v0 SegWit bech32 P2WPKH:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control" ng-readonly="true" value="{{vm.derivedKey.P2WPKHAddress}}">
+      </div>
+    </div>
+
+    <!-- SegWit v1 native p2tr -->
+    <div class="form-group" ng-if="vm.network.config.bech32">
+      <label class="col-sm-3 control-label">Dirección nativa v1 SegWit bech32m P2TR:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control" ng-readonly="true" value="{{vm.derivedKey.P2TRAddress}}">
+      </div>
+    </div>
+  </form>
+</div>
+
+<h4>Derivación personalizada BIP32</h4>
+<div class="well">
+  <form class="form-horizontal">
+
+    <!-- parent key -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Clave padre base58:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control"
+               ng-model="vm.customParentBase58"
+               ng-class="{'well-error': vm.customParentError}"
+               ng-change="vm.fromCustomParent()">
+        <span class="input-group-addon" ng-if="!vm.customParentError">&lt;-- pegar aquí para importar</span>
+        <span class="input-group-addon well-error" ng-if="vm.customParentError"> {{vm.customParentError}}</span>
+      </div>
+    </div>
+
+    <!-- derive -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Path de derivación personalizada:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control"
+               ng-model="vm.customPath"
+               ng-change="vm.fromCustomPath()">
+      </div>
+    </div>
+
+    <!-- derived key base58 -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Clave derivada base58:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control"
+               value="{{vm.customDerivedKey.toBase58()}}"
+               ng-readonly="true">
+      </div>
+    </div>
+
+    <!-- priv key WIF -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Clave privada (formato WIF, comprimida):</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control"
+               value="{{vm.customDerivedKey.toWIF()}}"
+               ng-readonly="true">
+      </div>
+    </div>
+
+    <!-- p2pkh address -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Dirección P2PKH:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control"
+               value="{{vm.customDerivedKey.address}}"
+               ng-readonly="true">
+      </div>
+    </div>
+
+    <!-- SegWit p2wpkh -->
+    <div class="form-group" ng-if="vm.network.config.bech32">
+      <label class="col-sm-3 control-label">Dirección SegWit P2SH-P2WPKH:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control" ng-readonly="true" value="{{vm.customDerivedKey.nestedP2WPKHAddress}}">
+      </div>
+    </div>
+
+    <!-- SegWit native p2wpkh -->
+    <div class="form-group" ng-if="vm.network.config.bech32">
+      <label class="col-sm-3 control-label">Dirección nativa SegWit bech32 P2WPKH:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control" ng-readonly="true" value="{{vm.customDerivedKey.P2WPKHAddress}}">
+      </div>
+    </div>
+
+    <!-- SegWit v1 native P2TR -->
+    <div class="form-group" ng-if="vm.network.config.bech32">
+      <label class="col-sm-3 control-label">Dirección SegWit v1 bech32m P2TR:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control" ng-readonly="true" value="{{vm.customDerivedKey.P2TRAddress}}">
+      </div>
+    </div>
+  </form>
+</div>

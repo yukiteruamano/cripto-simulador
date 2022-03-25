@@ -1,0 +1,105 @@
+<h1>MuSig: Key Aggregation for Schnorr Signatures</h1>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a ng-click="vm.showExplanation = !vm.showExplanation">Explicación</a>
+    </h4>
+  </div>
+  <div class="panel-collapse collapse" ng-class="{in: vm.showExplanation}">
+    <div class="panel-body">
+      MuSig es un esquema de agregación de claves para firmas Schnorr que está asegurado contra ataques de claves falsas.
+
+      <h3>Más info:</h3>
+      <ul>
+        <li><a href="https://eprint.iacr.org/2018/068">MuSig por Blockstream</a></li>
+        <li><a href="https://blockstream.com/2018/01/23/musig-key-aggregation-schnorr-signatures/">Arículo sobre MuSig</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<h3>Demo interactiva</h3>
+
+<h4>Mensaje y pares de claves participantes</h4>
+<div class="well">
+  <form class="form-horizontal">
+
+    <!-- message -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Mensaje a firmar:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control" ng-model="vm.message" ng-change="vm.hashMessage()">
+        <div class="input-group">
+          <div class="input-group-addon">Hash</div>
+          <input class="form-control" ng-readonly="true" value="{{vm.publicData.message.toString('hex')}}">
+        </div>
+      </div>
+    </div>
+
+    <!-- key pairs -->
+    <div class="form-group" ng-repeat="pair in vm.keyPairs">
+      <label class="col-sm-3 control-label">
+        Par de claves {{$index + 1}}:<br/><br/>
+        <small ng-if="vm.keyPairs.length > 1">
+          <a ng-click="vm.removeKeyPair($index)" ng-if="vm.step == 0"><i class="fas fa-trash-alt"></i></a>
+        </small>
+      </label>
+      <div class="col-sm-9 input-group">
+        <div class="input-group">
+          <div class="input-group-addon">Clave privada</div>
+          <input class="form-control" ng-model="pair.privateKeyHex" ng-change="vm.updateKeyPair($index)" ng-readonly="vm.step > 0">
+          <span class="input-group-addon">&lt;-- paste hex</span>
+          <span class="input-group-btn">
+            <button class="btn btn-primary" ng-click="vm.randomKeyPair($index)" ng-disabled="vm.step > 0">Aleatorizar</button>
+          </span>
+        </div>
+        <div class="input-group">
+          <div class="input-group-addon">Clave púlica</div>
+          <input class="form-control" ng-readonly="true" value="{{pair.publicKeyHex}}">
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="col-lg-offset-3 col-sm-9 input-group">
+        <div class="input-group-btn">
+          <button class="btn btn-primary" ng-click="vm.newPrivateKey()" ng-disabled="vm.step > 0">Agregar par de claves</button></div>
+        </div>
+    </div>
+  </form>
+</div>
+
+<p>
+  Una vez que haya configurado los pares de claves, haga clic en el siguiente botón para recorrer el proceso de firma.
+  Observe cómo cambian los datos públicos y privados después de cada paso.
+  To reset the demo, please reload the page.
+</p>
+
+<button class="btn btn-primary" ng-click="vm.nextStep()" ng-disabled="vm.step > 7">{{vm.steps[vm.step].label}}</button>
+
+<h4>Data pública</h4>
+<small>Esto representa datos que son conocidos por todos los participantes. De hecho, cada participante calculará/almacenará estos valores durante la sesión de firma.</small>
+<div class="well">
+  <form class="form-horizontal">
+    <div class="form-group">
+      <div class="col-sm-12 input-group">
+        <textarea rows="15" ng-readonly="true" class="form-control">{{vm.hexEncoded(vm.publicData) | json}}</textarea>
+      </div>
+    </div>
+  </form>
+</div>
+
+<h4>Data privada del firmante</h4>
+<small>
+  Esto representa datos que sólo conoce la parte individual y nunca se comparte entre los firmantes.
+  Así, por ejemplo, el propietario del par de claves 2 sólo conoce los datos mostrados aquí en el índice 1.
+</small>
+<div class="well">
+  <form class="form-horizontal">
+    <div class="form-group">
+      <div class="col-sm-12 input-group">
+        <textarea rows="15" ng-readonly="true" class="form-control">{{vm.hexEncoded(vm.signerPrivateData) | json}}</textarea>
+      </div>
+    </div>
+  </form>
+</div>

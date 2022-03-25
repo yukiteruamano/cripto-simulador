@@ -1,0 +1,113 @@
+<h1>Firmas Schnorr</h1>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a ng-click="vm.showExplanation = !vm.showExplanation">Explicación</a>
+    </h4>
+  </div>
+  <div class="panel-collapse collapse" ng-class="{in: vm.showExplanation}">
+    <div class="panel-body">
+      <p>
+        Las Schnorr Signatures o firmas Schnorr, es una solución planteada en la red Bitcoin que busca mejorar la privacidad 
+        y escalabilidad del sistema. Al permitir que un conjunto de firmas de transacciones con una misma entrada pueda ser sustituida por una única firma.
+        Para ello, se busca reducir el espacio de almacenamiento ocupado dentro de un bloque. Lo que, a su vez, permite que las transacciones puedan ser confirmadas 
+        de forma mucho más rápida, mejorando el rendimiento de la red. La propuesta de mejora fue presentada por Pieter Wuille en julio de 2019.
+      </p>
+      <h3>Más información:</h3>
+      <ul>
+        <li><a href="https://academy.bit2me.com/que-son-las-firmas-schnorr/">Bit2Me Academy - ¿Qué son las firmas Schnorr?</a></li>
+        <li><a href="https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki">BIP 340 - Firmas Schnorr</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<h4>Firmando mensaje</h4>
+<div class="well">
+  <form class="form-horizontal">
+
+    <!-- key pairs -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Par de claves:</label>
+      <div class="col-sm-9 input-group">
+        <div class="input-group">
+          <div class="input-group-addon">Clave privada</div>
+          <input class="form-control" ng-readonly="true" value="{{vm.privateKey}}">
+        </div>
+        <div class="input-group">
+          <div class="input-group-addon">Clave pública</div>
+          <input class="form-control" ng-readonly="true" value="{{vm.publicKey}}">
+        </div>
+      </div>
+    </div>
+
+    <!-- message -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Mensaje:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control" ng-model="vm.message" ng-change="vm.signMessage()">
+      </div>
+    </div>
+
+    <!-- message sha256 -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Hash SHA-256 del mensaje:</label>
+      <div class="col-sm-9 no-left-padding">
+        <input class="form-control" ng-readonly="true" value="{{vm.messageHash.toString('hex')}}">
+      </div>
+    </div>
+
+    <!-- ECDSA signature -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Firma ECDSA:</label>
+      <div class="col-sm-9 no-left-padding">
+        <textarea class="form-control" rows="2" ng-readonly="true">{{vm.ecdsaSignature}}</textarea>
+      </div>
+    </div>
+
+    <!-- schnorr signature -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Firma Schnorr:</label>
+      <div class="col-sm-9 no-left-padding">
+        <textarea class="form-control" rows="2" ng-readonly="true">{{vm.signature}}</textarea>
+        Mejora en el tamaño: <b>{{$root.round(vm.sizeImprovement, 1)}}%</b>
+      </div>
+    </div>
+  </form>
+</div>
+
+<h4>Verificando firma Schnorr</h4>
+<div class="well" ng-class="{'well-success': vm.signatureValid, 'well-error': !vm.signatureValid}">
+  <form class="form-horizontal">
+    <div class="form-group">
+      <label for="publicKey" class="col-sm-3 control-label">Clave pública:</label>
+      <div class="col-sm-9 input-group">
+        <input id="publicKey"
+               ng-model="vm.publicKeyToVerify"
+               ng-change="vm.verifySignature()"
+               class="form-control">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="messageHash" class="col-sm-3 control-label">Hash del mensaje:</label>
+      <div class="col-sm-9 input-group">
+        <input id="messageHash"
+               ng-model="vm.messageHashToVerify"
+               ng-change="vm.verifySignature()"
+               class="form-control">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="signature" class="col-sm-3 control-label">Firma:</label>
+      <div class="col-sm-9 no-left-padding">
+        <input id="signature"
+               ng-model="vm.signatureToVerify"
+               ng-change="vm.verifySignature()"
+               class="form-control">
+      </div>
+    </div>
+  </form>
+</div>

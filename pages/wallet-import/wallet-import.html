@@ -1,0 +1,132 @@
+<h1>Importar monedero HD a Bitcoin Core</h1>
+
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <h4 class="panel-title">
+      <a ng-click="vm.showExplanation = !vm.showExplanation">Explicación</a>
+    </h4>
+  </div>
+  <div class="panel-collapse collapse" ng-class="{in: vm.showExplanation}">
+    <div class="panel-body">
+      Esta sección permite transformar tu monedero HD en un monedero compatible con el estándar usado por Bitcoin Core. 
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-warning">
+  <strong>Advertencia</strong>: No realice estos cambios para uso en producción, es solo un experimento. 
+</div>
+
+<h4>Monedero a importar</h4>
+<div class="well">
+  <form class="form-horizontal">
+
+    <!-- mode -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Modo de importación:</label>
+      <div class="col-sm-9 input-group">
+        <select ng-model="vm.mode"
+                ng-options="mode.label for mode in vm.modes"
+                ng-change="vm.fromSeed()"
+                class="form-control">
+        </select>
+      </div>
+    </div>
+
+    <!-- mnemonic -->
+    <div class="form-group" ng-if="vm.mode.id === 'mnemonic'">
+      <label class="col-sm-3 control-label">Seed Mnemonica (BIP39):</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control" ng-model="vm.mnemonic" ng-change="vm.fromMnemonic()">
+        <span class="input-group-addon">&lt;-- pegue la seed aquí.</span>
+      </div>
+    </div>
+
+    <!-- passphrase -->
+    <div class="form-group" ng-if="vm.mode.id === 'mnemonic'">
+      <label class="col-sm-3 control-label">Clave:</label>
+      <div class="col-sm-9 input-group">
+        <input class="form-control"
+               ng-model="vm.passphrase"
+               ng-change="vm.fromMnemonic()"
+               type="{{vm.asPassword ? 'password' : 'text'}}">
+        <span class="input-group-btn">
+            <button class="btn btn-primary" ng-click="vm.asPassword = !vm.asPassword">
+                {{vm.asPassword ? 'Mostrar' : 'Ocultar'}} claves
+            </button>
+        </span>
+        <div class="input-group-addon">Método</div>
+        <select ng-model="vm.strenghtening"
+                ng-change="vm.fromMnemonic()"
+                ng-options="s.label for s in vm.strenghteningMethods"
+                class="form-control">
+        </select>
+      </div>
+    </div>
+
+    <!-- derive -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Parámetros para derivar claves:</label>
+      <div class="col-sm-9 input-group">
+        <select ng-model="vm.scheme"
+                ng-options="scheme.label for scheme in vm.schemes"
+                ng-change="vm.fromSeed()"
+                class="form-control">
+        </select>
+      </div>
+    </div>
+
+    <!-- root key base58 -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Root key HD:</label>
+      <div class="col-sm-9 input-group as-block">
+        <input class="form-control"
+               style="width: 80%"
+               ng-model="vm.nodeBase58"
+               ng-readonly="vm.mode.id === 'mnemonic'"
+               ng-change="vm.fromBase58()"
+               ng-class="{'well-error': vm.mode.id === 'hdroot' && vm.error}">
+        <span class="input-group-addon" ng-if="vm.mode.id === 'hdroot' && !vm.error" style="width: 20%">&lt;-- pegue aquí para importar.</span>
+        <span class="input-group-addon well-error" ng-if="vm.mode.id === 'hdroot' && vm.error" style="width: 20%"> {{vm.error}}</span>
+      </div>
+    </div>
+
+    <!-- import type -->
+    <div class="form-group">
+      <label class="col-sm-3 control-label">Parámetros de importación:</label>
+      <div class="col-sm-9 input-group">
+        <div class="input-group-addon">Tipo de importación</div>
+        <select ng-model="vm.importType" ng-options="type.label for type in vm.importTypes" class="form-control">
+        </select>
+        <div class="input-group-addon">Inicio del Path</div>
+        <input class="form-control" ng-model="vm.path">
+      </div>
+      <div class="col-sm-offset-3 col-sm-9 input-group">
+        <div class="input-group-addon">Cambio (_chg_): Valor de inicio</div>
+        <input class="form-control" ng-model="vm.changeStart">
+        <div class="input-group-addon">Valor final: </div>
+        <input class="form-control" ng-model="vm.changeEnd">
+      </div>
+      <div class="col-sm-offset-3 col-sm-9 input-group">
+        <div class="input-group-addon">Índice (_idx_): Valor de inicio</div>
+        <input class="form-control" ng-model="vm.indexStart">
+        <div class="input-group-addon">Valor final</div>
+        <input class="form-control" ng-model="vm.indexEnd">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <div class="col-sm-offset-3 col-sm-9 input-group">
+        <button class="btn btn-primary" ng-click="vm.createExport()">Crear exportación</button>
+      </div>
+    </div>
+
+    <!-- result -->
+    <div class="form-group" ng-if="vm.result">
+      <div class="col-sm-12 input-group">
+        <textarea rows="50" ng-readonly="true" class="form-control" style="white-space: pre">{{vm.result}}</textarea>
+      </div>
+    </div>
+  </form>
+</div>
+

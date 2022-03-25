@@ -21,5 +21,3 @@ Para descargar el simuldor tienes dos formas:
 
 Para iniciar el simulador solo basta con descomprimir (en caso de haber descargado el zip) o ir al directorio de clonación de Git y abrir el archivo **index.html**. Hecho esto, verás en tu navegadaor el simulador abierto y listo para ser usado. 
 
-![Simulador criptográfico de Bit2Me](https://academy.bit2me.com/wp-content/uploads/2018/08/Que_es_clave_publica_academy_bit2me.png) 
-
